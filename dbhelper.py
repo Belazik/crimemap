@@ -1,5 +1,5 @@
 import pymysql
-
+import datetime
 
 class DBHelper:
 
@@ -19,19 +19,28 @@ class DBHelper:
     def get_all_inputs(self):
         connection = self.connect()
         try:
-            query = "SELECT description FROM crimes;"
+            query = "SELECT latitude, longitude, date, category, description FROM crimes;"
             with connection.cursor() as cursor:
                 cursor.execute(query)
-                return cursor.fetchall()
+                crimes = []
+                for rowdb in cursor:
+                    data = {'latitude': rowdb[0],
+                            'longitude': rowdb[1],
+                            'date': datetime.datetime.strftime(rowdb[2], '%Y-%m-%d'),
+                            'category': rowdb[3],
+                            'description': rowdb[4]}
+                    crimes.append(data)
+                return crimes
         finally:
             cursor.close()
 
     def add_input(self, data):
         connection = self.connect()
         try:
-            query = "INSERT INTO crimes (description) VALUES ('{}');".format(data)
+            query = "INSERT INTO crimes (category, date, latitude, longitude, description) VALUES (%s, %s, %s, %s, %s);"
             with connection.cursor() as cursor:
-                cursor.execute(query)
+                cursor.execute(query, (data["category"], data["date"],
+                               data["latitude"], data["longitude"], data["description"]))
                 connection.commit()
         finally:
             connection.close()
